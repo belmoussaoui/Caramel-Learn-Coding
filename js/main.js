@@ -116,9 +116,19 @@ class SceneGame extends Phaser.Scene {
         const mt = (1024 - 6*96) / 2 + 96 / 2;
         for (let i = 0; i < gameMap.data.length; i++) {
             const data = gameMap.data[i];
+            if (data === 1) {
+                // continue;
+            }
             const x = (i % 6) * w + w / 2;
             const y = Math.floor(i / 6) * h + mt;
-            const tile = this.add.rectangle(x, y, w, h, 0xffffff);
+            let c = 0xffffff;
+            if (i === gameMap.start) {
+                c = 0x50c878;
+            }
+            if (i === gameMap.end) {
+                c = 0xd2042d;
+            }
+            const tile = this.add.rectangle(x, y, w, h, c);
             tile.setStrokeStyle(2, 0x000000);
             tile.id = i;
             tile.setInteractive().on("pointerdown", event => {
@@ -148,9 +158,9 @@ class GameMap {
 
     setup(id) {
         this.id = id;
-        this.data = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-        this.start = 3;
-        this.end = 23;
+        this.data = [0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0]
+        this.start = 13;
+        this.end = 16;
     }
 
     tileWidth() {
