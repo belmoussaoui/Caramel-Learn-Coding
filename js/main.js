@@ -1,5 +1,3 @@
-let bestScore = 0;
-
 class SceneBoot extends Phaser.Scene {
     constructor() {
         super();
@@ -8,7 +6,7 @@ class SceneBoot extends Phaser.Scene {
     preload() {
         this.preloadAudio();
         this.preloadImage();
-        this.load.on('complete', () => this.scene.start("Title"));
+        this.load.on('complete', () => this.scene.start("Game"));
     }
 
     preloadAudio() {
@@ -99,13 +97,36 @@ class SceneTitle extends Phaser.Scene {
 class SceneGame extends Phaser.Scene {
     constructor() {
         super();
+        this.tiles = [];
+
         
     }
     init() {
+        gameMap.setup(1);
     }
 
 
     create() {
+        this.createMap();
+    }
+
+    createMap() {
+        const w = 96;
+        const h = 96;
+        const mt = (1024 - 6*96) / 2 + 96 / 2;
+        for (let i = 0; i < gameMap.data.length; i++) {
+            const data = gameMap.data[i];
+            const x = (i % 6) * w + w / 2;
+            const y = Math.floor(i / 6) * h + mt;
+            const tile = this.add.rectangle(x, y, w, h, 0xffffff);
+            tile.setStrokeStyle(2, 0x000000);
+            tile.id = i;
+            tile.setInteractive().on("pointerdown", event => {
+                console.log(tile.id);
+            },
+            this);
+            this.tiles.push(tile);
+        }
     }
 
     update() {
@@ -113,12 +134,56 @@ class SceneGame extends Phaser.Scene {
 
   
 }
+class GameMap {
+    constructor() {
+        this.id = 0;
+        this.data = [];
+        this.start = 0;
+        this.end = 0;
+    }
+
+    row() {
+        return 6;
+    }
+
+    setup(id) {
+        this.id = id;
+        this.data = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        this.start = 3;
+        this.end = 23;
+    }
+
+    tileWidth() {
+        return 48;
+    }
+    
+    tileHeight() {
+        return 48;
+    }
+
+    canvasToMapX(x) {
+        return Math.floor(x / this.tileWidth());
+    }
+    
+    canvasToMapY(y) {
+        return Math.floor(y / this.tileHeight());
+    }
+
+    centerX() {
+        return 576 / 2;
+    }
+
+    centerY() {
+        return 1024 / 2;
+    }
+
+}
 
 
 const config = {
     type: Phaser.AUTO,
-    width: 288*2,
-    height: 512*2,
+    width: 576,
+    height: 1024,
     backgroundColor: "#8abae4",
     physics: { default: "arcade", arcade: { debug: false } },
     scale: {
@@ -134,6 +199,8 @@ const config = {
         },
     },
 };
+
+const gameMap = new GameMap();
 
 const game = new Phaser.Game(config);
 game.scene.add("Boot", SceneBoot, true);
