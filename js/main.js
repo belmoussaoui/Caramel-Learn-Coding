@@ -17,6 +17,7 @@ class SceneBoot extends Phaser.Scene {
         this.load.image('play2', './assets/img/play2.png');
         this.load.image('logo1', './assets/img/logo1.png');
         this.load.image('logo2', './assets/img/logo2.png');
+        this.load.image('player', './assets/img/player.png');
     }
 }
 
@@ -108,12 +109,14 @@ class SceneGame extends Phaser.Scene {
 
     create() {
         this.createMap();
+        this.player = new Player(this, gameMap.startX(), gameMap.startY());
+        this.add.existing(this.player);
     }
 
     createMap() {
         const w = 96;
         const h = 96;
-        const mt = (1024 - 6*96) / 2 + 96 / 2;
+        const mt = gameMap.mt;
         for (let i = 0; i < gameMap.data.length; i++) {
             const data = gameMap.data[i];
             if (data === 1) {
@@ -140,6 +143,7 @@ class SceneGame extends Phaser.Scene {
     }
 
     update() {
+        this.player.update();
     }
 
   
@@ -150,6 +154,7 @@ class GameMap {
         this.data = [];
         this.start = 0;
         this.end = 0;
+        this.mt = (1024 - 6 * 96) / 2 + 96 / 2;
     }
 
     row() {
@@ -186,6 +191,100 @@ class GameMap {
     centerY() {
         return 1024 / 2;
     }
+
+    startX() {
+        return (this.start % this.row()) * this.tileWidth() + 96;
+    }
+    
+    startY() {
+        return Math.floor(this.start / this.row()) * this.tileWidth() + this.mt + 96;
+    }
+
+}
+
+class Player extends Phaser.GameObjects.Sprite {
+    constructor(scene, x, y) {
+        super(scene, x, y, 'player');
+        this.direction = 0;
+        this.routes = [1, 3, 1, 1, 2, 1, 1, 1];
+        this.state = 'move';
+    }
+
+    canPass(x, y, d) {
+        return true;
+    }
+
+    update() {
+        if (this.state === 'move') {
+            this.state = 'wait';
+            let route = this.routes.shift();
+            if (route) {
+                this.processMoveCommand(route);
+            }
+            this.scene.time.addEvent({ delay: 800, callback: () => this.state = 'move'});
+        }
+    }
+
+    processMoveCommand(command) {
+        switch (command) {
+            case 1:
+                this.moveForward();
+                break;
+            case 2:
+                this.turnLeft();
+                break;
+            case 3:
+                this.turnRight()
+        }
+    }
+
+    moveForward() {
+        if (this.canPass(this.x, this.y, this.direction)) {
+            this.x += this.xWithDirection();
+            this.y += this.yWithDirection();
+            console.log(this.x);
+        }
+    }
+
+    xWithDirection() {
+        switch (this.direction) {
+            case 0:
+                return gameMap.tileWidth() * 2;
+            case 1:
+            case 3:
+                return 0
+            case 2:
+                return -gameMap.tileWidth() * 2;
+        }
+        return 0;
+    }
+
+    yWithDirection() {
+        switch (this.direction) {
+            case 0:
+            case 2:
+                return 0;
+            case 1:
+                return -gameMap.tileHeight() * 2;
+            case 3:
+                return gameMap.tileHeight() * 2;
+        }
+        return 0;
+    }
+
+    turnLeft() {
+        this.direction = (this.direction + 1) % 4;
+        this.angle -= 90;
+    }
+
+    turnRight() {
+        this.direction = this.direction - 1;
+        if (this.direction === -1) {
+            this.direction = 3;
+            this.angle += 90;
+        }
+    }
+
 
 }
 
