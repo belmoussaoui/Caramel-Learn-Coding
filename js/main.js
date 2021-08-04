@@ -38,6 +38,8 @@ class SceneBoot extends Phaser.Scene {
         this.load.image('dog', './assets/img/dog.png');
         this.load.image('cat', './assets/img/cat.png');
         this.load.image('ending', './assets/img/ending.png');
+        this.load.image('eye1', './assets/img/eye1.png');
+        this.load.image('eye2', './assets/img/eye2.png');
         this.load.json('maps', './data/maps.json');
     }
 }
@@ -45,6 +47,11 @@ class SceneBoot extends Phaser.Scene {
 class SceneTitle extends Phaser.Scene {
     constructor() {
         super();
+        this.pos = new Phaser.Math.Vector2();
+    }
+
+    init() {
+        this.trackEye = false;
     }
 
     create() {
@@ -55,6 +62,11 @@ class SceneTitle extends Phaser.Scene {
             this.createPlay();
             this.createTitle();
         }
+        let w = this.sys.game.canvas.width / 2;
+        let h = this.sys.game.canvas.height / 2;
+        this.circle1 = new Phaser.Geom.Ellipse(w - 45, h * 2 - 345, 25, 25);
+        this.circle2 = new Phaser.Geom.Ellipse(w + 60, h * 2 - 345, 25, 25);
+
     }
 
     createLogo() {
@@ -93,13 +105,24 @@ class SceneTitle extends Phaser.Scene {
             fontSize: '64px',
         }).setOrigin(0.5, 0.5);
         this.hello = this.add.image(w, h * 2, 'hello').setOrigin(0.5, 0);
+        this.eye1 = this.add.image(w-40, h * 2 + 80, 'eye1');
+        this.line1 = new Phaser.Geom.Line(this.eye1.x, h * 2 - 345, 0, 0);
+        this.eye2 = this.add.image(w+60, h * 2 + 80, 'eye1');
+        this.line2 = new Phaser.Geom.Line(this.eye2.x, h * 2 - 345, 0, 0);
         this.tweens.add({
             y: 600,
             targets: [this.hello],
             ease: 'Cubic.easeIn', 
             duration: 1000,
-            hold: 1000,
             repeat:0,
+        });
+        this.tweens.add({
+            y: h * 2 - 345,
+            targets: [this.eye1, this.eye2],
+            ease: 'Cubic.easeIn', 
+            duration: 1000,
+            repeat:0,
+            onComplete: () => this.trackEye = true
         });
         this.hello.scale = 0.75;
   
@@ -139,6 +162,21 @@ class SceneTitle extends Phaser.Scene {
     onPlay() {
         this.cameras.main.fadeOut(600);
         this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start("Game"));
+    }
+
+    update() {
+        if (this.trackEye) {
+            this.line1.x2 = this.input.activePointer.x;
+            this.line1.y2 = this.input.activePointer.y;
+            Phaser.Geom.Ellipse.CircumferencePoint(this.circle1, Phaser.Geom.Line.Angle(this.line1), this.pos);
+            this.eye1.x = this.pos.x;
+            this.eye1.y = this.pos.y;
+            this.line2.x2 = this.input.activePointer.x;
+            this.line2.y2 = this.input.activePointer.y;
+            Phaser.Geom.Ellipse.CircumferencePoint(this.circle2, Phaser.Geom.Line.Angle(this.line2), this.pos);
+            this.eye2.x = this.pos.x;
+            this.eye2.y = this.pos.y;
+        }
     }
 }
 
@@ -553,15 +591,26 @@ class Player extends Phaser.GameObjects.Sprite {
 
     turnLeft() {
         this.direction = (this.direction + 1) % 4;
-        this.arrow.angle -= 90;
+        this.scene.tweens.add({
+            angle: this.arrow.angle - 90,
+            targets: this.arrow,
+            duration: 300,
+            repeat:0,
+        });
+        // this.arrow.angle -= 90;
     }
 
     turnRight() {
         this.direction = this.direction - 1;
+        this.scene.tweens.add({
+            angle: this.arrow.angle + 90,
+            targets: this.arrow,
+            duration: 300,
+            repeat:0,
+        });
         if (this.direction === -1) {
             this.direction = 3;
         }
-        this.arrow.angle += 90;
     }
 
 }
@@ -569,10 +618,12 @@ class Player extends Phaser.GameObjects.Sprite {
 class SceneOver extends Phaser.Scene {
     constructor() {
         super();
+        this.pos = new Phaser.Math.Vector2();
     }
 
     init() {
         gameMap.id = 1;
+        this.trackEye = false;
     }
 
     create() {
@@ -594,13 +645,6 @@ class SceneOver extends Phaser.Scene {
         });
         dog.scale = 0.75
         cat.scale = 0.7
-        this.add.text(w, h, "Bravo!", {
-            fontFamily: 'Helvetica',
-            fontStyle: 'bold',
-            color: '#fff',
-            fontSize: '48px',
-
-        }).setOrigin(0.5, 0.5);
         this.tweens.add({
             y: stars.y - 10,
             targets: [stars],
@@ -614,11 +658,46 @@ class SceneOver extends Phaser.Scene {
         this.play.on('pointerover', () => this.play.setTexture('back2'));
         this.play.on('pointerout', () => this.play.setTexture('back1'));
         this.play.on('pointerdown', () => this.onBack());
+         this.createEyes();
+    }
+
+    createEyes() {
+        let w = this.sys.game.canvas.width / 2;
+        let h = this.sys.game.canvas.height / 2;
+        this.eye1 = this.add.image(w - 45, 130 - 300, 'eye2');
+        this.eye2 = this.add.image(w + 40, 130 - 300, 'eye2');
+        this.line1 = new Phaser.Geom.Line(this.eye1.x, 160, 0, 0);
+        this.line2 = new Phaser.Geom.Line(this.eye2.x, 160, 0, 0);
+        this.tweens.add({
+            y: 170,
+            targets: [this.eye1, this.eye2],
+            ease: 'Cubic.easeIn', 
+            duration: 1000,
+            repeat:0,
+            onComplete: () => this.trackEye = true
+        });
+        this.circle1 = new Phaser.Geom.Ellipse(w - 45, 160, 30, 30);
+        this.circle2 = new Phaser.Geom.Ellipse(w + 40, 160, 30, 30);
     }
 
     onBack() {
         this.cameras.main.fadeOut(600);
         this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start("Title"));
+    }
+
+     update() {
+        if (this.trackEye) {
+            this.line1.x2 = this.input.activePointer.x;
+            this.line1.y2 = this.input.activePointer.y;
+            Phaser.Geom.Ellipse.CircumferencePoint(this.circle1, Phaser.Geom.Line.Angle(this.line1), this.pos);
+            this.eye1.x = this.pos.x;
+            this.eye1.y = this.pos.y;
+            this.line2.x2 = this.input.activePointer.x;
+            this.line2.y2 = this.input.activePointer.y;
+            Phaser.Geom.Ellipse.CircumferencePoint(this.circle2, Phaser.Geom.Line.Angle(this.line2), this.pos);
+            this.eye2.x = this.pos.x;
+            this.eye2.y = this.pos.y;
+        }
     }
 }
 
