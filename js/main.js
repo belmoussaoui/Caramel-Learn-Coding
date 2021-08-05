@@ -8,7 +8,8 @@ class SceneBoot extends Phaser.Scene {
     preload() {
         this.preloadAudio();
         this.preloadImage();
-        this.load.on('complete', () => this.scene.start("Over"));
+        this.load.json('maps', './data/maps2.json');
+        this.load.on('complete', () => this.scene.start("Title"));
     }
 
     preloadAudio() {
@@ -42,7 +43,6 @@ class SceneBoot extends Phaser.Scene {
         this.load.image('eye2', './assets/img/eye2.png');
         this.load.image('bravo', './assets/img/bravo.png');
         this.load.image('win', './assets/img/win.png');
-        this.load.json('maps', './data/maps.json');
     }
 }
 
@@ -195,6 +195,7 @@ class SceneGame extends Phaser.Scene {
         super();
         this.tiles = []; 
         this.commands = [];
+        this.actions = [];
         this.index = 0; 
         this.play = false;
     }
@@ -274,10 +275,15 @@ class SceneGame extends Phaser.Scene {
             if (gameMap.id === 1 && i !== 1) {
                 continue;
             }
+            if (gameMap.id === 2 && i === 0) {
+                continue;
+            }
             const action = gameMap.actions[i];
             const tile = this.add.circle(208 + i * 80 - 30 + i * 25, 900, 40, colors[i]);
+            this.actions.push(tile);
             tile.action = action;
             const image = this.add.image(208 + i * 80 - 30 + i * 25, 900, `action${action}`);
+            tile.image = image;
             tile.setInteractive().on("pointerdown", event => {
                 if (!this.canAction) {
                     return;
@@ -314,6 +320,19 @@ class SceneGame extends Phaser.Scene {
                 } else {
                     image.alpha = 0.1;
                 }
+            }
+            if (gameMap.id === 2) {
+                if (i === 2) {
+                    this.image = image;
+                    this.tween = this.tweens.add({
+                        targets: image,
+                        alpha: 0.2,
+                        duration: 1000,
+                        repeat: -1,
+                        yoyo: true,
+                    });
+                }
+                
             }
         }
     }
