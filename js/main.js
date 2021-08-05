@@ -13,6 +13,13 @@ class SceneBoot extends Phaser.Scene {
     }
 
     preloadAudio() {
+        this.load.audio('beep', `assets/audio/sci-fi_beep_computer_ui_02.wav`);
+        this.load.audio('win', `assets/audio/sci-fi_driod_robot_emote_beeps_04.wav`);
+        this.load.audio('fail_a', `assets/audio/sci-fi_code_fail_06.wav`);
+        this.load.audio('fail_b', `assets/audio/sci-fi_code_fail_13.wav`);
+        this.load.audio('ui_a', `assets/audio/ui_menu_button_beep_19.wav`);
+        this.load.audio('ui_b', `assets/audio/ui_menu_button_beep_06.wav`);
+        this.load.audio('neg', `assets/audio/sci-fi_driod_robot_emote_neg_05.wav`);
     }
 
     preloadImage() {
@@ -162,6 +169,7 @@ class SceneTitle extends Phaser.Scene {
     }
 
     onPlay() {
+        this.sound.play('ui_a');
         this.time.addEvent({ delay: 400, callback: () => {
             this.cameras.main.fadeOut(600);
             this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start("Game"));
@@ -193,14 +201,14 @@ class SceneTitle extends Phaser.Scene {
 class SceneGame extends Phaser.Scene {
     constructor() {
         super();
+    }
+    
+    init() {
         this.tiles = []; 
         this.commands = [];
         this.actions = [];
         this.index = 0; 
         this.play = false;
-    }
-
-    init() {
         gameMap.setup(this);
     }
 
@@ -253,9 +261,6 @@ class SceneGame extends Phaser.Scene {
             }
             tile.setStrokeStyle(4, 0x000000);
             tile.id = i;
-            tile.setInteractive().on("pointerdown", event => {
-            },
-            this);
             if (i === gameMap.end) {
                 this.star = this.add.image(x, y, 'star');
                 this.star.scale = 0.25;
@@ -288,6 +293,7 @@ class SceneGame extends Phaser.Scene {
                 if (!this.canAction) {
                     return;
                 }
+                this.sound.play('ui_b');
                 this.canAction = false;
                 this.tween.stop();
                 this.tweens.add({
@@ -365,7 +371,10 @@ class SceneGame extends Phaser.Scene {
             this.commands.push(image);
         }
         if (this.index === gameMap.commands) {
-            this.time.addEvent({ delay: 800, callback: () => {this.play = true;  this.scheduler.visible = true;}});
+            this.time.addEvent({ delay: 800, callback: () => {
+                this.play = true;
+                this.scheduler.visible = true;
+            }});
         }
     }
 
@@ -392,18 +401,9 @@ class SceneGame extends Phaser.Scene {
 
     bravo() {
         let w = this.sys.game.canvas.width / 2;
-        // let board = this.add.image(w, 400, 'actions');
-        // board.setDepth(100);
+        this.sound.play('win');
         this.star.destroy();
         this.onNextLevel();
-
-        // this.tweens.add({
-        //     y: 550,
-        //     targets: [this.hello],
-        //     ease: 'Cubic.easeIn', 
-        //     duration: 500,
-        //     repeat:0,
-        // });
         this.player.anim.stop();
         this.tweens.add({
             y: this.player.y - 30,
@@ -416,7 +416,7 @@ class SceneGame extends Phaser.Scene {
     }
 
     onNextLevel() {
-        this.time.addEvent({ delay: 3000, callback: () => {
+        this.time.addEvent({ delay: 2000, callback: () => {
             this.cameras.main.fadeOut(800);
             this.cameras.main.once('camerafadeoutcomplete', () => {
                 if (gameMap.id > this.cache.json.get('maps').length) {
@@ -495,6 +495,7 @@ class Player extends Phaser.GameObjects.Sprite {
         super(scene, x, y, 'player');
         this.startX = x;
         this.startY = y;
+        this.isWin = false;
         this.direction = gameMap.direction;
         // this.angle = -this.direction * 90
         this.routes = [];
@@ -535,6 +536,7 @@ class Player extends Phaser.GameObjects.Sprite {
         this.arrow.y = this.y + 15;
         if (this.state === 'move' && this.scene.play) {
             if (this.checkVictory()) {
+                this.isWin = true;
                 gameMap.id++;
                 this.state = 'wait';
                 this.scene.bravo();
@@ -557,6 +559,9 @@ class Player extends Phaser.GameObjects.Sprite {
                 this.scene.tile.x = this.x;
             } else {
                 this.clear();
+                if (!this.isWin) {
+                    this.scene.sound.play('fail_b')
+                }
             }
             this.scene.time.addEvent({ delay: 800, callback: () => this.state = 'move'});
         }
@@ -589,10 +594,11 @@ class Player extends Phaser.GameObjects.Sprite {
             repeat:-1,
             yoyo: true
         });
-        
+        this.state = 'wait'
     }
 
     processMoveCommand(command) {
+        this.scene.sound.play('beep');
         switch (command) {
             case 1:
                 this.turnLeft();
@@ -618,6 +624,8 @@ class Player extends Phaser.GameObjects.Sprite {
                 yoyo: true
             });
         } else {
+            this.scene.sound.play('fail_a');
+            this.scene.sound.play('neg');
             this.anim.stop();
             this.scene.tweens.add({
                 targets: this,
@@ -661,7 +669,7 @@ class Player extends Phaser.GameObjects.Sprite {
         this.scene.tweens.add({
             angle: this.arrow.angle - 90,
             targets: this.arrow,
-            duration: 300,
+            duration: 200,
             repeat:0,
         });
         // this.arrow.angle -= 90;
@@ -672,7 +680,7 @@ class Player extends Phaser.GameObjects.Sprite {
         this.scene.tweens.add({
             angle: this.arrow.angle + 90,
             targets: this.arrow,
-            duration: 300,
+            duration: 200,
             repeat:0,
         });
         if (this.direction === -1) {
@@ -779,6 +787,7 @@ class SceneOver extends Phaser.Scene {
     }
 
     onBack() {
+        this.sound.play('ui_a');
         this.cameras.main.fadeOut(600);
         this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start("Title"));
     }
